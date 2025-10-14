@@ -1,8 +1,8 @@
-name: .NET Multi-Platform Build
+name: Build
 
 on:
   push:
-    branches: ["**"]  # 匹配所有分支
+    branches: ["**"]
 
 jobs:
   build:
@@ -24,11 +24,11 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Interstellar.Server/Interstellar.Server.csproj
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build Interstellar.Server/Interstellar.Server.csproj --no-restore --configuration Release
     - name: Publish
-      run: dotnet publish --configuration Release --runtime ${{ matrix.target-os }} --self-contained true --output ./publish/${{ matrix.target-os }}
+      run: dotnet publish Interstellar.Server/Interstellar.Server.csproj --configuration Release --runtime ${{ matrix.target-os }} --self-contained true --output ./publish/${{ matrix.target-os }}
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
