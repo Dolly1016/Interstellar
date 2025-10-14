@@ -1,0 +1,36 @@
+name: .NET Multi-Platform Build
+
+on:
+  push:
+    branches: ["**"]  # 匹配所有分支
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            target-os: linux-x64
+          - runs-on: windows-latest
+            target-os: win-x64
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+    - name: Publish
+      run: dotnet publish --configuration Release --runtime ${{ matrix.target-os }} --self-contained true --output ./publish/${{ matrix.target-os }}
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dotnet-build-${{ matrix.target-os }}
+        path: ./publish/${{ matrix.target-os }}
