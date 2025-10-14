@@ -28,7 +28,7 @@ jobs:
     - name: Build
       run: dotnet build Interstellar.Server/Interstellar.Server.csproj --no-restore --configuration Release
     - name: Publish
-      run: dotnet publish Interstellar.Server/Interstellar.Server.csproj --configuration Release --runtime ${{ matrix.target-os }} --self-contained true --output ./publish/${{ matrix.target-os }}
+      run: dotnet publish Interstellar.Server/Interstellar.Server.csproj --configuration Release --runtime ${{ matrix.target-os }} --output ./publish/${{ matrix.target-os }}
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
