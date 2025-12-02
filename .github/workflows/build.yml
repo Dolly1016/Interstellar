@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            target-os: linux-x64
+          - runs-on: windows-latest
+            target-os: win-x64
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore Interstellar.Server/Interstellar.Server.csproj
+    - name: Build
+      run: dotnet build Interstellar.Server/Interstellar.Server.csproj --no-restore --configuration Release
+    - name: Publish
+      run: dotnet publish Interstellar.Server/Interstellar.Server.csproj --configuration Release --runtime ${{ matrix.target-os }} --output ./publish/${{ matrix.target-os }}
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dotnet-build-${{ matrix.target-os }}
+        path: ./publish/${{ matrix.target-os }}
