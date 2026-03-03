@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 using WebSocketSharp.Server;
@@ -11,10 +12,14 @@ namespace Interstellar.Server;
 
 internal class Server
 {
-    static public void StartServer(string url)
+    static public void StartServer(string url, bool secure, string? certPath, string? password)
     {
         var http = new HttpServer(url);
-
+        if (secure && certPath != null)
+        {
+            http.SslConfiguration.EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+            http.SslConfiguration.ServerCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(certPath, password ?? "");
+        }
         // --- HTTP ハンドラ ---
         http.OnGet += (sender, e) =>
         {
@@ -60,6 +65,7 @@ internal class Server
 
         // --- WebSocket /vc を登録 ---
         http.AddWebSocketService<VCClientService>("/vc");
+        
 
         // 任意の調整
         http.KeepClean = true;

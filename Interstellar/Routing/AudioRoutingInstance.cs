@@ -17,10 +17,11 @@ public class AudioRoutingInstance : IHasAudioPropertyNode
     private AudioRoutingInstanceNode[] nodes;
     private BufferedSampleProvider sourceProvider;
     AudioRoutingInstanceNode IHasAudioPropertyNode.GetProperty(int propertyId) => nodes[propertyId];
-
+    public int ClientId { get; private init; }
     
-    internal AudioRoutingInstance(List<AudioBuffer> buffers, AudioRoutingInstanceNode[] nodes, BufferedSampleProvider sourceProvider)
+    internal AudioRoutingInstance(List<AudioBuffer> buffers, AudioRoutingInstanceNode[] nodes, BufferedSampleProvider sourceProvider, int clientId)
     {
+        this.ClientId = clientId;
         this.buffers = buffers;
         this.nodes = nodes;
         this.sourceProvider = sourceProvider;
@@ -29,5 +30,9 @@ public class AudioRoutingInstance : IHasAudioPropertyNode
     public void AddSamples(float[] samples, int offset, int count)
     {
         sourceProvider.AddSamples(samples, offset, count);
+        LastReceiptTime = System.DateTime.Now.Ticks;
     }
+
+    private long LastReceiptTime = System.DateTime.Now.Ticks;
+    public int ElapsedSinceLastReceipt => (int)((System.DateTime.Now.Ticks - LastReceiptTime) / 10000);//ミリ秒単位
 }

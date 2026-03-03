@@ -121,12 +121,12 @@ public class VCRoom : IConnectionContext, IHasAudioPropertyNode, IMicrophoneCont
         {
             instance = audioManager.Generate(clientId);
             onConnectClient?.Invoke(clientId, instance, asLocalClient);
-            if(pooledProfile.TryGetValue(clientId, out var profile))
+            audioInstances[clientId] = instance;
+            if (pooledProfile.TryGetValue(clientId, out var profile))
             {
                 onUpdateProfile?.Invoke(clientId, profile.id, profile.name);
                 pooledProfile.Remove(clientId);
             }
-            audioInstances[clientId] = instance;
         }
         return instance;
     }

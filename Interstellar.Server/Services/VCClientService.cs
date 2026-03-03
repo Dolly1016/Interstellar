@@ -164,24 +164,22 @@ internal class VCClientService : WebSocketBehavior, IMessageProcessor
         {
             if(i == myId) continue;
             bool shouldHave = (mask & (1L << i)) != 0;
-            bool have = streamTracks.TryGetValue(i, out var existed);
-            if(shouldHave && !have)
+            bool have = streamTracks.ContainsKey(i);
+            if (shouldHave && !have)
             {
                 var format = AudioHelpers.GetOpusFormat(i);
                 var stream = new MediaStreamTrack(format, MediaStreamStatusEnum.SendOnly);
                 streamTracks.Add(i, stream);
                 connection.addTrack(stream);
             }
-            else if(!shouldHave && have)
-            {
-                connection.removeTrack(existed);
-                streamTracks.Remove(i);
-            }
         }
 
         //AudioStreamを更新
         audioStreams.Clear();
-        foreach(var audioStream in connection.AudioStreamList) audioStreams[audioStream.GetSendingFormat().ID] = audioStream;
+        foreach (var audioStream in connection.AudioStreamList)
+        {
+            audioStreams[audioStream.GetSendingFormat().ID] = audioStream;
+        }
         
 
         var offer = connection.createOffer(null);
@@ -221,7 +219,17 @@ internal class VCClientService : WebSocketBehavior, IMessageProcessor
         {
             stream.SendAudio(durationRtpUnits, encodedAudio);
         }
+        else
+        {
+            if(!lastError.HasValue || System.DateTime.Now.Subtract(lastError.Value).Microseconds > 500)
+            {
+                lastError = System.DateTime.Now;
+                SendMessage(UpdateTracks(client!.Room.CurrentVoiceMask));
+                return;
+            }
+        }
     }
+    System.DateTime? lastError = null;
 
     /// <summary>
     /// クライアントにメッセージを送信します。

@@ -125,7 +125,7 @@ internal class AudioManager : IHasAudioPropertyNode
         }
         BufferedSampleProvider sourceProvider = new(WaveFormat.CreateIeeeFloatWaveFormat(AudioHelpers.ClockRate, 1), bufferMaxLength) { DiscardOnBufferOverflow = true, BufferCutSize = bufferMaxLength, BufferCutToSize = bufferLength };
         GenerateInner(router, sourceProvider);
-        return new(this.buffers, nodes, sourceProvider);
+        return new(this.buffers, nodes, sourceProvider, groupId);
     }
 
     public ISampleProvider? Endpoint => endpoint;

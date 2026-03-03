@@ -72,6 +72,7 @@ internal class RoomConnection : IMessageProcessor
         this.region = region;
 
         this.socket = new WebSocket(url);
+        if (url.StartsWith("wss:")) this.socket.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12;
         this.socket.OnMessage += (sender, e) =>
         {
             if (e.IsBinary) MessagePacker.UnpackMessages(e.RawData, this);
@@ -162,7 +163,6 @@ internal class RoomConnection : IMessageProcessor
         localAudioStream?.SendAudio(durationRtpUnits, new ArraySegment<byte>(encodedBuffer, 0, encodedLength));
     }
 
-    MediaStreamTrack[] lastTracks = [];
 
     int IMessageProcessor.Process(MessageTag tag, ReadOnlySpan<byte> bytes)
     {
@@ -206,22 +206,23 @@ internal class RoomConnection : IMessageProcessor
         localAudioStream = connection.AudioStreamList.Find(a => a.GetSendingFormat().ID == id);
     }
 
+    MediaStreamTrack[] tracks = new MediaStreamTrack[AudioHelpers.MaxTracks]; 
     private void OnReceiveSdpOffer(SdpOfferMessage message)
     {
-        //トラックの削除と更新
-        foreach (var track in lastTracks) connection!.removeTrack(track);
-        List<MediaStreamTrack> tracks = [];
+        //トラックの更新(削除はしない)
         long mask = message.Mask;
         for (int i = 0; i < AudioHelpers.MaxTracks; i++)
         {
-            if ((mask & (1L << i)) == 0) continue;
+            if ((mask & (1L << i)) != 0)
+            {
+                if (tracks[i] != null) continue;
 
-            var format = AudioHelpers.GetOpusFormat(i);
-            var track = new MediaStreamTrack(format, MediaStreamStatusEnum.RecvOnly);
-            connection!.addTrack(track);
-            tracks.Add(track);
+                var format = AudioHelpers.GetOpusFormat(i);
+                var track = new MediaStreamTrack(format, MediaStreamStatusEnum.RecvOnly);
+                connection!.addTrack(track);
+                tracks[i] = track;
+            }
         }
-        lastTracks = tracks.ToArray();
 
         //SDPの処理
         connection!.setRemoteDescription(new RTCSessionDescriptionInit { sdp = message.Sdp, type = RTCSdpType.offer });

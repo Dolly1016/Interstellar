@@ -30,7 +30,7 @@ public interface IMicrophone
     internal void Initialize(IMicrophoneContext microphoneContext);
 
     void SetVolume(float volume);
-
+    float Level { get; }
     /// <summary>
     /// 録音を終了する際に呼び出されます。
     /// </summary>
@@ -52,11 +52,19 @@ public class ManualMicrophone : IMicrophone
     private float[] cachedAudio = new float[AudioLength2];
     private int cachedLength = 0;
     private float[] sampleBuffer = new float[AudioLength2];
+    public float Level => level * volume;
+    private float level = 0f;
 
     public void PushAudioData(float[] audioData)
     {
         double bufferMilliseconds;
         int buffers;
+
+        float max = audioData.Max();
+        level -= (float)audioData.Length / (float)AudioHelpers.ClockRate * 0.5f;
+        if(level < 0f) level = 0f;
+        if (max > level) level = max;
+
         if (cachedLength + audioData.Length >= AudioLength2)
         {
             bufferMilliseconds = 40.0;
@@ -134,6 +142,9 @@ public class WindowsMicrophone : IMicrophone
     WaveInEvent waveIn;
     float[] sampleBuffer = null!;
     int deviceNum;
+    public float Level => level * volume;
+    private float level = 0f;
+
     public WindowsMicrophone(string deviceName)
     {
         var count = WaveInEvent.DeviceCount;
@@ -153,10 +164,18 @@ public class WindowsMicrophone : IMicrophone
     {
         var samples = e.BytesRecorded / 2;
         if (sampleBuffer == null || sampleBuffer.Length != samples) sampleBuffer = new float[samples];
+
+        float max = 0f;
         for (int i = 0; i < samples; i++)
         {
             sampleBuffer[i] = BitConverter.ToInt16(e.Buffer, i * 2) / 32768f;
+            float abs = Math.Abs(sampleBuffer[i]);
+            if (abs > max) max = abs;
         }
+
+        level -= (float)samples / (float)AudioHelpers.ClockRate * 0.5f;
+        if (level < 0f) level = 0f;
+        if (max > level) level = max;
 
         context?.SendAudio(sampleBuffer, samples, waveIn.BufferMilliseconds, volume);
     }
